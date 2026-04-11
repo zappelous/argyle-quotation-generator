@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Company {
+  id            String      @id @default(cuid())
+  name          String
+  uen           String?
+  address       String
+  phone         String?
+  email         String
+  logo          String?     // base64 data URL
+  bankName      String?
+  bankAccount   String?
+  bankAddress   String?
+  swiftCode     String?
+  bankCurrency  String      @default("SGD")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  quotations    Quotation[]
+}
+
+model Customer {
+  id          String      @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  address     String
+  uen         String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  quotations  Quotation[]
+}
+
+model SKU {
+  id            String          @id @default(cuid())
+  code          String          @unique
+  name          String
+  description   String?
+  model         String?
+  performance   String?
+  unitPrice     Decimal         @db.Decimal(10, 2)
+  imageUrl      String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  quotationItems QuotationItem[]
+}
+
+model Quotation {
+  id            String          @id @default(cuid())
+  quotationNo   String          @unique
+  issueDate     DateTime        @default(now())
+  customer      Customer        @relation(fields: [customerId], references: [id])
+  customerId    String
+  company       Company         @relation(fields: [companyId], references: [id])
+  companyId     String
+  items         QuotationItem[]
+  subtotal      Decimal         @db.Decimal(10, 2)
+  gstRate       Decimal         @default(0.00) @db.Decimal(5, 2)
+  gstAmount     Decimal         @db.Decimal(10, 2)
+  total         Decimal         @db.Decimal(10, 2)
+  deliveryTerms String?
+  paymentTerms  String?
+  warranty      String?
+  dispatchDate  String?
+  status        String          @default("draft") // draft, sent, accepted
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model QuotationItem {
+  id            String      @id @default(cuid())
+  quotation     Quotation   @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  quotationId   String
+  sku           SKU         @relation(fields: [skuId], references: [id])
+  skuId         String
+  quantity      Int
+  unitPrice     Decimal     @db.Decimal(10, 2)
+  amount        Decimal     @db.Decimal(10, 2)
+  description   String?     // override from SKU description
+  displayName   String      // name shown on quotation
+  lineNo        Int
+}
