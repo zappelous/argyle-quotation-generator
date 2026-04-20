@@ -12,6 +12,9 @@ export default function TemplatesPage() {
   const [showForm, setShowForm] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
+  const [previewing, setPreviewing] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
   useEffect(() => {
     loadTemplates()
     fetch('/api/skus').then(r => r.json()).then(setSkus)
@@ -21,6 +24,27 @@ export default function TemplatesPage() {
     fetch('/api/templates')
       .then(r => r.json())
       .then(setTemplates)
+  }
+
+  const previewTemplate = async (template: any) => {
+    setPreviewing(template.id)
+    try {
+      const res = await fetch('/api/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template }),
+      })
+      if (res.ok) {
+        const blob = await res.blob()
+        const url = window.URL.createObjectURL(blob)
+        setPreviewUrl(url)
+      } else {
+        alert('Failed to generate preview')
+      }
+    } catch (err) {
+      alert('Preview error')
+    }
+    setPreviewing(null)
   }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>, formSetter: (val: string) => void) => {
@@ -205,6 +229,9 @@ export default function TemplatesPage() {
                   <option value="standard">Standard</option>
                   <option value="minimal">Minimal</option>
                   <option value="banner">Banner</option>
+                  <option value="modern">Modern</option>
+                  <option value="centered">Centered</option>
+                  <option value="sidebar">Sidebar</option>
                 </select>
               </div>
               <div>
@@ -213,6 +240,8 @@ export default function TemplatesPage() {
                   <option value="bordered">Bordered</option>
                   <option value="minimal">Minimal</option>
                   <option value="striped">Striped</option>
+                  <option value="clean">Clean</option>
+                  <option value="professional">Professional</option>
                 </select>
               </div>
               <div>
@@ -281,7 +310,8 @@ export default function TemplatesPage() {
                 <p>{t.currency} · {t.taxName} {t.taxRate}%</p>
                 <p>{t.headerStyle} header · {t.tableStyle} table</p>
               </div>
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button onClick={() => previewTemplate(t)} className="text-sm text-blue-700 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100">Preview PDF</button>
                 <button onClick={() => editTemplate(t)} className="text-sm text-slate-700 bg-slate-100 px-3 py-1 rounded hover:bg-slate-200">Edit</button>
                 <button onClick={() => duplicateTemplate(t)} className="text-sm text-slate-700 bg-slate-100 px-3 py-1 rounded hover:bg-slate-200">Duplicate</button>
                 <button onClick={() => deleteTemplate(t.id)} className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded hover:bg-red-100">Delete</button>
@@ -289,6 +319,19 @@ export default function TemplatesPage() {
             </div>
           ))}
         </div>
+
+        {/* Preview Modal */}
+        {previewUrl && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl h-[85vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="font-semibold">Template Preview</h3>
+                <button onClick={() => { setPreviewUrl(null); window.URL.revokeObjectURL(previewUrl) }} className="text-slate-500 hover:text-slate-700 text-xl">×</button>
+              </div>
+              <iframe src={previewUrl} className="flex-1 w-full rounded-b-xl" />
+            </div>
+          </div>
+        )}
 
         {templates.length === 0 && !showForm && (
           <div className="text-center py-12 text-slate-500">

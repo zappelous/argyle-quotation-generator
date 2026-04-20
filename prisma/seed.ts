@@ -93,18 +93,55 @@ async function main() {
 
   console.log('Seeded SKUs')
 
-  // Assign all SKUs to the default template
+  // Create DXC Technology template
+  const dxcTemplate = await prisma.template.create({
+    data: {
+      name: 'DXC Technology',
+      isDefault: false,
+      companyName: 'DXC Technology',
+      companyUen: '',
+      companyAddress: '1 Raffles Place, #25-01 Tower 2, Singapore 048616',
+      companyPhone: '+65 6410 8000',
+      companyEmail: 'singapore.sales@dxc.com',
+      contactPerson: '',
+      bankName: 'DBS Bank Ltd',
+      bankAccount: '',
+      bankAddress: '12 Marina Boulevard, Singapore 018982',
+      swiftCode: 'DBSSSGSG',
+      bankCurrency: 'SGD',
+      currency: 'SGD',
+      taxRate: 9,
+      taxName: 'GST',
+      primaryColor: '#5F249F',
+      secondaryColor: '#000000',
+      accentColor: '#2E1A47',
+      fontFamily: 'Helvetica',
+      showLogo: true,
+      showUen: false,
+      showBankDetails: true,
+      showSignatures: true,
+      headerStyle: 'modern',
+      tableStyle: 'professional',
+      defaultDeliveryTerms: 'As per project timeline',
+      defaultPaymentTerms: 'Net 45 days from invoice date. Early payment discount: 2/10 net 30',
+      defaultWarranty: '12 months standard warranty on all hardware. 90 days on services',
+    }
+  })
+  console.log('Created DXC template:', dxcTemplate.name)
+
+  // Assign all SKUs to DXC template too (with custom enterprise pricing)
   const allSkus = await prisma.sKU.findMany()
   for (const sku of allSkus) {
     await prisma.templateSKU.create({
       data: {
-        templateId: template.id,
+        templateId: dxcTemplate.id,
         skuId: sku.id,
         isActive: true,
+        customPrice: Number(sku.unitPrice) * 0.85, // 15% enterprise discount
       }
     })
   }
-  console.log('Assigned SKUs to template')
+  console.log('Assigned SKUs to DXC template with enterprise pricing')
 }
 
 main()
