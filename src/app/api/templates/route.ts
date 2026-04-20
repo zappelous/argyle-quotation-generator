@@ -11,7 +11,8 @@ export async function GET(req: Request) {
       include: {
         skus: {
           include: { sku: true }
-        }
+        },
+        defaultCustomer: true,
       }
     })
     if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404 })
@@ -19,7 +20,10 @@ export async function GET(req: Request) {
   }
   
   const templates = await prisma.template.findMany({
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    include: {
+      defaultCustomer: true,
+    }
   })
   return NextResponse.json(templates)
 }
@@ -40,7 +44,8 @@ export async function POST(req: Request) {
     include: {
       skus: {
         include: { sku: true }
-      }
+      },
+      defaultCustomer: true,
     }
   })
   return NextResponse.json(template, { status: 201 })
@@ -66,7 +71,8 @@ export async function PUT(req: Request) {
     include: {
       skus: {
         include: { sku: true }
-      }
+      },
+      defaultCustomer: true,
     }
   })
   return NextResponse.json(template)

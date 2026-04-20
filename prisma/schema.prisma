@@ -51,6 +51,10 @@ model Template {
   taxRate         Decimal     @default(0.00) @db.Decimal(5, 2)
   taxName         String      @default("GST")
   
+  // Default customer for this template
+  defaultCustomerId String?
+  defaultCustomer   Customer?   @relation(fields: [defaultCustomerId], references: [id])
+  
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   quotations      Quotation[]
@@ -80,6 +84,7 @@ model Customer {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   quotations  Quotation[]
+  templates   Template[]  // Templates that default to this customer
 }
 
 model SKU {

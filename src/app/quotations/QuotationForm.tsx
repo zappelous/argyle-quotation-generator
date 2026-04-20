@@ -87,6 +87,10 @@ export default function QuotationFormPage() {
     const template = templates.find(t => t.id === templateId)
     if (template) {
       loadTemplateDefaults(template)
+      // Auto-select default customer if set and not already selected
+      if (template.defaultCustomer && !customerId) {
+        setCustomerId(template.defaultCustomer.id)
+      }
     }
   }
 

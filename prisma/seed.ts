@@ -1,6 +1,18 @@
 import { prisma } from '../src/lib/prisma'
 
 async function main() {
+  // Create L'Oreal customer first
+  const loreal = await prisma.customer.create({
+    data: {
+      name: "L'Oreal",
+      email: 'procurement@loreal.com',
+      phone: '+65 6789 0123',
+      address: '438B Alexandra Road, #08-01, Singapore 119968',
+      uen: '197001634G',
+    }
+  })
+  console.log('Created customer:', loreal.name)
+
   // Create default template
   const template = await prisma.template.create({
     data: {
@@ -35,6 +47,43 @@ async function main() {
     }
   })
   console.log('Created default template:', template.name)
+
+  // Create DXC Technology template
+  const dxcTemplate = await prisma.template.create({
+    data: {
+      name: 'DXC Technology',
+      isDefault: false,
+      companyName: 'DXC Technology',
+      companyUen: '',
+      companyAddress: '1 Raffles Place, #25-01 Tower 2, Singapore 048616',
+      companyPhone: '+65 6410 8000',
+      companyEmail: 'singapore.sales@dxc.com',
+      contactPerson: '',
+      bankName: 'DBS Bank Ltd',
+      bankAccount: '',
+      bankAddress: '12 Marina Boulevard, Singapore 018982',
+      swiftCode: 'DBSSSGSG',
+      bankCurrency: 'SGD',
+      currency: 'SGD',
+      taxRate: 0,
+      taxName: '',
+      primaryColor: '#5F249F',
+      secondaryColor: '#000000',
+      accentColor: '#2E1A47',
+      fontFamily: 'Helvetica',
+      showLogo: true,
+      showUen: false,
+      showBankDetails: true,
+      showSignatures: true,
+      headerStyle: 'modern',
+      tableStyle: 'professional',
+      defaultDeliveryTerms: 'As per project timeline',
+      defaultPaymentTerms: 'Net 45 days from invoice date',
+      defaultWarranty: '12 months standard warranty',
+      defaultCustomerId: loreal.id,
+    }
+  })
+  console.log('Created DXC template:', dxcTemplate.name)
 
   await prisma.sKU.createMany({
     data: [
@@ -93,55 +142,27 @@ async function main() {
 
   console.log('Seeded SKUs')
 
-  // Create DXC Technology template
-  const dxcTemplate = await prisma.template.create({
-    data: {
-      name: 'DXC Technology',
-      isDefault: false,
-      companyName: 'DXC Technology',
-      companyUen: '',
-      companyAddress: '1 Raffles Place, #25-01 Tower 2, Singapore 048616',
-      companyPhone: '+65 6410 8000',
-      companyEmail: 'singapore.sales@dxc.com',
-      contactPerson: '',
-      bankName: 'DBS Bank Ltd',
-      bankAccount: '',
-      bankAddress: '12 Marina Boulevard, Singapore 018982',
-      swiftCode: 'DBSSSGSG',
-      bankCurrency: 'SGD',
-      currency: 'SGD',
-      taxRate: 9,
-      taxName: 'GST',
-      primaryColor: '#5F249F',
-      secondaryColor: '#000000',
-      accentColor: '#2E1A47',
-      fontFamily: 'Helvetica',
-      showLogo: true,
-      showUen: false,
-      showBankDetails: true,
-      showSignatures: true,
-      headerStyle: 'modern',
-      tableStyle: 'professional',
-      defaultDeliveryTerms: 'As per project timeline',
-      defaultPaymentTerms: 'Net 45 days from invoice date. Early payment discount: 2/10 net 30',
-      defaultWarranty: '12 months standard warranty on all hardware. 90 days on services',
-    }
-  })
-  console.log('Created DXC template:', dxcTemplate.name)
-
-  // Assign all SKUs to DXC template too (with custom enterprise pricing)
+  // Assign all SKUs to templates (standard pricing for both)
   const allSkus = await prisma.sKU.findMany()
   for (const sku of allSkus) {
+    // Assign to default template
+    await prisma.templateSKU.create({
+      data: {
+        templateId: template.id,
+        skuId: sku.id,
+        isActive: true,
+      }
+    })
+    // Assign to DXC template (no custom price = standard pricing)
     await prisma.templateSKU.create({
       data: {
         templateId: dxcTemplate.id,
         skuId: sku.id,
         isActive: true,
-        customPrice: Number(sku.unitPrice) * 0.85, // 15% enterprise discount
       }
     })
   }
-  console.log('Assigned SKUs to DXC template with enterprise pricing')
+  console.log('Assigned SKUs to all templates')
 }
 
 main()

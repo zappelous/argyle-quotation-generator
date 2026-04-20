@@ -486,7 +486,7 @@ export function QuotationPDF({
             <Text style={styles.totalValue}>{fmtMoney(Number(quotation.subtotal))}</Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>{template.taxName} {Number(quotation.taxRate)}%</Text>
+            <Text style={styles.totalLabel}>{template.taxName ? `${template.taxName} ${Number(quotation.taxRate)}%` : 'Tax'}</Text>
             <Text style={styles.totalValue}>{fmtMoney(Number(quotation.taxAmount))}</Text>
           </View>
           <View style={styles.totalRow}>
