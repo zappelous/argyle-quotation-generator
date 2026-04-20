@@ -10,9 +10,9 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card href="/quotations/new" title="New Quotation" desc="Create a new quotation by selecting SKUs and customer." />
           <Card href="/quotations" title="View Quotations" desc="View, edit, download PDF, or email saved quotations." />
+          <Card href="/templates" title="Templates" desc="Create and manage quotation templates for different companies." />
           <Card href="/skus" title="Manage SKUs" desc="Add and edit your product catalogue with prices." />
           <Card href="/customers" title="Customers" desc="Manage your customer database." />
-          <Card href="/company" title="Company Settings" desc="Upload logo, bank details, and contact info." />
         </div>
       </main>
     </>

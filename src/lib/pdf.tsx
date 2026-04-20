@@ -9,161 +9,274 @@ import {
   Image,
 } from '@react-pdf/renderer'
 
-const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontSize: 10,
-    fontFamily: 'Helvetica',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    borderBottom: '1px solid #000',
-    paddingBottom: 10,
-  },
-  companyInfo: {
-    width: '60%',
-  },
-  companyName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  invoiceTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'right',
-  },
-  section: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  bold: {
-    fontWeight: 'bold',
-  },
-  table: {
-    display: 'flex',
-    width: '100%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#000',
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-  },
-  tableHeader: {
-    backgroundColor: '#f0f0f0',
-    fontWeight: 'bold',
-  },
-  tableCell: {
-    padding: 4,
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-  },
-  colNo: { width: '6%' },
-  colModel: { width: '12%' },
-  colDesc: { width: '32%' },
-  colPerf: { width: '14%' },
-  colQty: { width: '8%', textAlign: 'center' },
-  colPrice: { width: '14%', textAlign: 'right' },
-  colAmount: { width: '14%', textAlign: 'right', borderRightWidth: 0 },
-  totals: {
-    marginTop: 10,
-    alignItems: 'flex-end',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    width: '40%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    paddingVertical: 3,
-  },
-  totalLabel: {
-    width: '60%',
-    textAlign: 'right',
-    fontWeight: 'bold',
-  },
-  totalValue: {
-    width: '40%',
-    textAlign: 'right',
-  },
-  termsSection: {
-    marginTop: 20,
-  },
-  termRow: {
-    marginBottom: 4,
-  },
-  signatures: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 40,
-  },
-  signatureBox: {
-    width: '45%',
-  },
-  signatureLine: {
-    borderTopWidth: 1,
-    borderTopColor: '#000',
-    marginTop: 30,
-    paddingTop: 4,
-  },
-})
+interface Template {
+  companyName: string
+  companyUen?: string | null
+  companyAddress: string
+  companyPhone?: string | null
+  companyEmail: string
+  companyLogo?: string | null
+  contactPerson?: string | null
+  bankName?: string | null
+  bankAccount?: string | null
+  bankAddress?: string | null
+  swiftCode?: string | null
+  bankCurrency: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  fontFamily: string
+  showLogo: boolean
+  showUen: boolean
+  showBankDetails: boolean
+  showSignatures: boolean
+  headerStyle: string
+  tableStyle: string
+  currency: string
+  taxName: string
+}
+
+interface Customer {
+  name: string
+  email: string
+  phone?: string | null
+  address: string
+  uen?: string | null
+}
+
+interface QuotationItem {
+  id: string
+  quantity: number
+  unitPrice: number
+  amount: number
+  description?: string | null
+  displayName: string
+  lineNo: number
+  sku?: {
+    model?: string | null
+    code?: string
+    performance?: string | null
+  } | null
+}
+
+interface Quotation {
+  quotationNo: string
+  issueDate: string
+  subtotal: number
+  taxRate: number
+  taxAmount: number
+  total: number
+  deliveryTerms?: string | null
+  paymentTerms?: string | null
+  warranty?: string | null
+  dispatchDate?: string | null
+  notes?: string | null
+}
+
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result ? {
+    r: parseInt(result[1], 16) / 255,
+    g: parseInt(result[2], 16) / 255,
+    b: parseInt(result[3], 16) / 255,
+  } : { r: 0.12, g: 0.16, b: 0.23 }
+}
 
 export function QuotationPDF({
-  company,
+  template,
   customer,
   quotation,
   items,
 }: {
-  company: any
-  customer: any
-  quotation: any
-  items: any[]
+  template: Template
+  customer: Customer
+  quotation: Quotation
+  items: QuotationItem[]
 }) {
+  const primary = hexToRgb(template.primaryColor)
+  const secondary = hexToRgb(template.secondaryColor)
+  
   const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString('en-GB')
 
   const fmtMoney = (n: number) =>
-    `SGD ${Number(n || 0).toLocaleString('en-US', {
+    `${template.currency} ${Number(n || 0).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`
 
+  const styles = StyleSheet.create({
+    page: {
+      padding: 30,
+      fontSize: 10,
+      fontFamily: template.fontFamily || 'Helvetica',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 20,
+      borderBottom: `1px solid ${template.primaryColor}`,
+      paddingBottom: 10,
+    },
+    companyInfo: {
+      width: '60%',
+    },
+    companyName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: template.primaryColor,
+      marginBottom: 4,
+    },
+    invoiceTitle: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      textAlign: 'right',
+      color: template.primaryColor,
+    },
+    section: {
+      marginBottom: 12,
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    bold: {
+      fontWeight: 'bold',
+      color: template.primaryColor,
+    },
+    table: {
+      display: 'flex',
+      width: '100%',
+      borderStyle: 'solid',
+      borderWidth: template.tableStyle === 'minimal' ? 0 : 1,
+      borderColor: template.primaryColor,
+      marginTop: 10,
+      marginBottom: 10,
+    },
+    tableRow: {
+      flexDirection: 'row',
+      borderBottomWidth: template.tableStyle === 'minimal' ? 1 : 1,
+      borderBottomColor: template.tableStyle === 'minimal' ? '#e2e8f0' : template.primaryColor,
+    },
+    tableHeader: {
+      backgroundColor: template.tableStyle === 'striped' ? template.primaryColor : '#f0f0f0',
+      fontWeight: 'bold',
+      color: template.tableStyle === 'striped' ? '#ffffff' : template.primaryColor,
+    },
+    tableCell: {
+      padding: 4,
+      borderRightWidth: template.tableStyle === 'minimal' ? 0 : 1,
+      borderRightColor: template.tableStyle === 'minimal' ? 'transparent' : template.primaryColor,
+    },
+    colNo: { width: '6%' },
+    colModel: { width: '12%' },
+    colDesc: { width: '32%' },
+    colPerf: { width: '14%' },
+    colQty: { width: '8%', textAlign: 'center' },
+    colPrice: { width: '14%', textAlign: 'right' },
+    colAmount: { width: '14%', textAlign: 'right', borderRightWidth: 0 },
+    totals: {
+      marginTop: 10,
+      alignItems: 'flex-end',
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      width: '40%',
+      borderBottomWidth: 1,
+      borderBottomColor: template.tableStyle === 'minimal' ? '#e2e8f0' : template.primaryColor,
+      paddingVertical: 3,
+    },
+    totalLabel: {
+      width: '60%',
+      textAlign: 'right',
+      fontWeight: 'bold',
+      color: template.primaryColor,
+    },
+    totalValue: {
+      width: '40%',
+      textAlign: 'right',
+    },
+    termsSection: {
+      marginTop: 20,
+    },
+    termRow: {
+      marginBottom: 4,
+    },
+    signatures: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 40,
+    },
+    signatureBox: {
+      width: '45%',
+    },
+    signatureLine: {
+      borderTopWidth: 1,
+      borderTopColor: template.primaryColor,
+      marginTop: 30,
+      paddingTop: 4,
+    },
+  })
+
+  const isMinimalHeader = template.headerStyle === 'minimal'
+  const isBannerHeader = template.headerStyle === 'banner'
+
   return (
     <Document>
       <Page size='A4' style={styles.page}>
-        <View style={styles.header}>
+        {/* Header */}
+        <View style={[
+          styles.header,
+          ...(isBannerHeader ? [{
+            backgroundColor: template.primaryColor,
+            padding: 15,
+            marginHorizontal: -30,
+            marginTop: -30,
+            paddingTop: 20,
+          }] : [])
+        ]}>
           <View style={styles.companyInfo}>
-            {company.logo && (
-              <Image src={company.logo} style={{ width: 60, height: 60, marginBottom: 6 }} />
+            {template.showLogo && template.companyLogo && (
+              <Image src={template.companyLogo} style={{ width: 60, height: 60, marginBottom: 6 }} />
             )}
-            <Text style={styles.companyName}>{company.name}</Text>
-            <Text>UEN：{company.uen}</Text>
-            <Text>{company.address}</Text>
-            <Text>Tel: {company.phone}</Text>
-            <Text>Email: {company.email}</Text>
-            <Text>Contact Person: {company.contactPerson || ''}</Text>
+            <Text style={[
+              styles.companyName,
+              ...(isBannerHeader ? [{ color: '#ffffff' }] : [])
+            ]}>
+              {template.companyName}
+            </Text>
+            {template.showUen && template.companyUen && (
+              <Text style={isBannerHeader ? { color: '#ffffff' } : {}}>
+                UEN: {template.companyUen}
+              </Text>
+            )}
+            <Text style={isBannerHeader ? { color: '#ffffff' } : {}}>{template.companyAddress}</Text>
+            {template.companyPhone && (
+              <Text style={isBannerHeader ? { color: '#ffffff' } : {}}>Tel: {template.companyPhone}</Text>
+            )}
+            <Text style={isBannerHeader ? { color: '#ffffff' } : {}}>Email: {template.companyEmail}</Text>
+            {template.contactPerson && (
+              <Text style={isBannerHeader ? { color: '#ffffff' } : {}}>Contact: {template.contactPerson}</Text>
+            )}
           </View>
           <View>
-            <Text style={styles.invoiceTitle}>Proforma Invoice</Text>
-            <Text style={{ textAlign: 'right', marginTop: 8 }}>
+            <Text style={[
+              styles.invoiceTitle,
+              ...(isBannerHeader ? [{ color: '#ffffff' }] : [])
+            ]}>
+              Proforma Invoice
+            </Text>
+            <Text style={{ textAlign: 'right', marginTop: 8, color: isBannerHeader ? '#ffffff' : '#000000' }}>
               Invoice No: {quotation.quotationNo}
             </Text>
-            <Text style={{ textAlign: 'right' }}>
+            <Text style={{ textAlign: 'right', color: isBannerHeader ? '#ffffff' : '#000000' }}>
               Issue Date: {fmtDate(quotation.issueDate)}
             </Text>
           </View>
         </View>
 
+        {/* Customer Info */}
         <View style={styles.section}>
           <Text style={styles.bold}>TO THE BUYER:</Text>
           <Text>{customer.name}</Text>
@@ -173,6 +286,7 @@ export function QuotationPDF({
           <Text>Address: {customer.address}</Text>
         </View>
 
+        {/* Items Table */}
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
             <Text style={[styles.tableCell, styles.colNo]}>No.</Text>
@@ -210,14 +324,15 @@ export function QuotationPDF({
           ))}
         </View>
 
+        {/* Totals */}
         <View style={styles.totals}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
             <Text style={styles.totalValue}>{fmtMoney(Number(quotation.subtotal))}</Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>GST {Number(quotation.gstRate)}%</Text>
-            <Text style={styles.totalValue}>{fmtMoney(Number(quotation.gstAmount))}</Text>
+            <Text style={styles.totalLabel}>{template.taxName} {Number(quotation.taxRate)}%</Text>
+            <Text style={styles.totalValue}>{fmtMoney(Number(quotation.taxAmount))}</Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total</Text>
@@ -225,6 +340,7 @@ export function QuotationPDF({
           </View>
         </View>
 
+        {/* Terms */}
         <View style={styles.termsSection}>
           {quotation.deliveryTerms && (
             <View style={styles.termRow}>
@@ -254,36 +370,48 @@ export function QuotationPDF({
             </View>
           )}
 
-          <View style={styles.termRow}>
-            <Text style={styles.bold}>Bank Details for Payments:</Text>
-            <Text>Beneficiary: {company.bankName || company.name}</Text>
-            {company.bankAddress && <Text>Bank Address: {company.bankAddress}</Text>}
-            <Text>Account No: {company.bankAccount}</Text>
-            {company.swiftCode && <Text>SWIFT CODE: {company.swiftCode}</Text>}
-          </View>
+          {template.showBankDetails && template.bankAccount && (
+            <View style={styles.termRow}>
+              <Text style={styles.bold}>Bank Details for Payments:</Text>
+              <Text>Beneficiary: {template.bankName || template.companyName}</Text>
+              {template.bankAddress && <Text>Bank Address: {template.bankAddress}</Text>}
+              <Text>Account No: {template.bankAccount}</Text>
+              {template.swiftCode && <Text>SWIFT CODE: {template.swiftCode}</Text>}
+            </View>
+          )}
+
+          {quotation.notes && (
+            <View style={styles.termRow}>
+              <Text style={styles.bold}>Notes:</Text>
+              <Text>{quotation.notes}</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.signatures}>
-          <View style={styles.signatureBox}>
-            <Text style={styles.bold}>Party A: {company.name}</Text>
-            <Text>Signatory: {company.contactPerson || ''}</Text>
-            <Text>Position: CEO</Text>
-            <View style={styles.signatureLine}>
-              <Text>Signature: {company.contactPerson || ''}</Text>
+        {/* Signatures */}
+        {template.showSignatures && (
+          <View style={styles.signatures}>
+            <View style={styles.signatureBox}>
+              <Text style={styles.bold}>Party A: {template.companyName}</Text>
+              <Text>Signatory: {template.contactPerson || ''}</Text>
+              <Text>Position: CEO</Text>
+              <View style={styles.signatureLine}>
+                <Text>Signature: {template.contactPerson || ''}</Text>
+              </View>
+              <Text>Date: {fmtDate(quotation.issueDate)}</Text>
             </View>
-            <Text>Date: {fmtDate(quotation.issueDate)}</Text>
-          </View>
 
-          <View style={styles.signatureBox}>
-            <Text style={styles.bold}>Party B: {customer.name}</Text>
-            <Text>Signatory:</Text>
-            <Text>Position:</Text>
-            <View style={styles.signatureLine}>
-              <Text>Signature:</Text>
+            <View style={styles.signatureBox}>
+              <Text style={styles.bold}>Party B: {customer.name}</Text>
+              <Text>Signatory:</Text>
+              <Text>Position:</Text>
+              <View style={styles.signatureLine}>
+                <Text>Signature:</Text>
+              </View>
+              <Text>Date: {fmtDate(quotation.issueDate)}</Text>
             </View>
-            <Text>Date: {fmtDate(quotation.issueDate)}</Text>
           </View>
-        </View>
+        )}
       </Page>
     </Document>
   )

@@ -39,7 +39,7 @@ export default function QuotationsPage() {
         quotationId: q.id,
         to: q.customer.email,
         subject: `Quotation ${q.quotationNo}`,
-        message: `Dear ${q.customer.name},\n\nPlease find attached our quotation.\n\nBest regards,\n${q.company.name}`,
+        message: `Dear ${q.customer.name},\n\nPlease find attached our quotation.\n\nBest regards,\n${q.template?.companyName || 'Our Team'}`,
       }),
     })
     setSendingId(null)

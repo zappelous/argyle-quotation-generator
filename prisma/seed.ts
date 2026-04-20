@@ -1,6 +1,41 @@
 import { prisma } from '../src/lib/prisma'
 
 async function main() {
+  // Create default template
+  const template = await prisma.template.create({
+    data: {
+      name: 'Argyle Solar',
+      isDefault: true,
+      companyName: 'Argyle Solar Pte Ltd',
+      companyUen: '201907784K',
+      companyAddress: '160 Robinson Road, #14-04 Singapore Business Federation Center, Singapore 068914',
+      companyPhone: '65-6710-7016',
+      companyEmail: 'sales@argylesolar.com.sg',
+      contactPerson: 'Terry',
+      bankName: 'DBS Bank Ltd',
+      bankAccount: '003-922866-1',
+      bankAddress: '12 Marina Boulevard, DBS Asia Central, Marina Bay Financial Centre Tower 3, Singapore 018982',
+      swiftCode: 'DBSSSGSG',
+      bankCurrency: 'SGD',
+      currency: 'SGD',
+      taxRate: 0,
+      taxName: 'GST',
+      primaryColor: '#1e293b',
+      secondaryColor: '#64748b',
+      accentColor: '#0f172a',
+      showLogo: true,
+      showUen: true,
+      showBankDetails: true,
+      showSignatures: true,
+      headerStyle: 'standard',
+      tableStyle: 'bordered',
+      defaultDeliveryTerms: 'DDP',
+      defaultPaymentTerms: 'T/T 30% advance payment, the balance of 70% paid before shipment',
+      defaultWarranty: '25 years for PV panel, 5 years for Smart PV Controller, and 2 years for Accessories',
+    }
+  })
+  console.log('Created default template:', template.name)
+
   await prisma.sKU.createMany({
     data: [
       {
@@ -57,6 +92,19 @@ async function main() {
   })
 
   console.log('Seeded SKUs')
+
+  // Assign all SKUs to the default template
+  const allSkus = await prisma.sKU.findMany()
+  for (const sku of allSkus) {
+    await prisma.templateSKU.create({
+      data: {
+        templateId: template.id,
+        skuId: sku.id,
+        isActive: true,
+      }
+    })
+  }
+  console.log('Assigned SKUs to template')
 }
 
 main()

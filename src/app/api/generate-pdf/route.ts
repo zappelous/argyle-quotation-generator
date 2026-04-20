@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   const quotation = await prisma.quotation.findUnique({
     where: { id: quotationId },
     include: {
-      company: true,
+      template: true,
       customer: true,
       items: { include: { sku: true }, orderBy: { lineNo: 'asc' } },
     },
@@ -18,12 +18,31 @@ export async function POST(req: Request) {
 
   if (!quotation) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  // Serialize Decimal and Date values for the PDF component
+  const serializedQuotation = {
+    ...quotation,
+    issueDate: quotation.issueDate.toISOString(),
+    subtotal: Number(quotation.subtotal),
+    taxRate: Number(quotation.taxRate),
+    taxAmount: Number(quotation.taxAmount),
+    total: Number(quotation.total),
+    items: quotation.items.map(item => ({
+      ...item,
+      unitPrice: Number(item.unitPrice),
+      amount: Number(item.amount),
+      sku: item.sku ? {
+        ...item.sku,
+        unitPrice: Number(item.sku.unitPrice),
+      } : null,
+    })),
+  }
+
   const buffer = await renderToBuffer(
     QuotationPDF({
-      company: quotation.company,
+      template: quotation.template,
       customer: quotation.customer,
-      quotation,
-      items: quotation.items,
+      quotation: serializedQuotation,
+      items: serializedQuotation.items,
     })
   )
 

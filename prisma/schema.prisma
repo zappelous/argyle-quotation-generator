@@ -6,22 +6,68 @@ datasource db {
   provider = "postgresql"
 }
 
-model Company {
-  id            String      @id @default(cuid())
-  name          String
-  uen           String?
-  address       String
-  phone         String?
-  email         String
-  logo          String?     // base64 data URL
-  bankName      String?
-  bankAccount   String?
-  bankAddress   String?
-  swiftCode     String?
-  bankCurrency  String      @default("SGD")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  quotations    Quotation[]
+model Template {
+  id              String      @id @default(cuid())
+  name            String      // e.g. "Argyle Solar", "Generic Proforma"
+  isDefault       Boolean     @default(false)
+  
+  // Company info
+  companyName     String
+  companyUen      String?
+  companyAddress  String
+  companyPhone    String?
+  companyEmail    String
+  companyLogo     String?     // base64 data URL
+  contactPerson   String?
+  
+  // Bank details
+  bankName        String?
+  bankAccount     String?
+  bankAddress     String?
+  swiftCode       String?
+  bankCurrency    String      @default("SGD")
+  
+  // Styling
+  primaryColor    String      @default("#1e293b") // slate-900
+  secondaryColor  String      @default("#64748b") // slate-500
+  accentColor     String      @default("#0f172a") // slate-950
+  fontFamily      String      @default("Helvetica")
+  
+  // Layout options
+  showLogo        Boolean     @default(true)
+  showUen         Boolean     @default(true)
+  showBankDetails Boolean     @default(true)
+  showSignatures  Boolean     @default(true)
+  headerStyle     String      @default("standard") // standard, minimal, banner
+  tableStyle      String      @default("bordered")  // bordered, minimal, striped
+  
+  // Default terms
+  defaultDeliveryTerms  String?
+  defaultPaymentTerms   String?
+  defaultWarranty       String?
+  
+  // Currency & tax
+  currency        String      @default("SGD")
+  taxRate         Decimal     @default(0.00) @db.Decimal(5, 2)
+  taxName         String      @default("GST")
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  quotations      Quotation[]
+  skus            TemplateSKU[]
+}
+
+model TemplateSKU {
+  id            String    @id @default(cuid())
+  template      Template  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId    String
+  sku           SKU       @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  skuId         String
+  customPrice   Decimal?  @db.Decimal(10, 2) // override price per template
+  customName    String?   // override display name
+  isActive      Boolean   @default(true)
+  
+  @@unique([templateId, skuId])
 }
 
 model Customer {
@@ -48,6 +94,7 @@ model SKU {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   quotationItems QuotationItem[]
+  templateSKUs   TemplateSKU[]
 }
 
 model Quotation {
@@ -56,18 +103,19 @@ model Quotation {
   issueDate     DateTime        @default(now())
   customer      Customer        @relation(fields: [customerId], references: [id])
   customerId    String
-  company       Company         @relation(fields: [companyId], references: [id])
-  companyId     String
+  template      Template        @relation(fields: [templateId], references: [id])
+  templateId    String
   items         QuotationItem[]
   subtotal      Decimal         @db.Decimal(10, 2)
-  gstRate       Decimal         @default(0.00) @db.Decimal(5, 2)
-  gstAmount     Decimal         @db.Decimal(10, 2)
+  taxRate       Decimal         @default(0.00) @db.Decimal(5, 2)
+  taxAmount     Decimal         @db.Decimal(10, 2)
   total         Decimal         @db.Decimal(10, 2)
   deliveryTerms String?
   paymentTerms  String?
   warranty      String?
   dispatchDate  String?
   status        String          @default("draft") // draft, sent, accepted
+  notes         String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 }

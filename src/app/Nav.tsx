@@ -8,9 +8,9 @@ const links = [
   { href: '/', label: 'Dashboard' },
   { href: '/quotations', label: 'Quotations' },
   { href: '/quotations/new', label: 'New Quotation' },
+  { href: '/templates', label: 'Templates' },
   { href: '/skus', label: 'SKUs' },
   { href: '/customers', label: 'Customers' },
-  { href: '/company', label: 'Company' },
   { href: '/admin/allowed-emails', label: 'Admin' },
 ]
 
@@ -25,7 +25,7 @@ export function Nav() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-6 overflow-x-auto">
-            <span className="font-bold text-lg whitespace-nowrap">QuoteGen</span>
+            <span className="font-bold text-lg whitespace-nowrap">QuoteFlow</span>
             {!isAuthPage && links.map((l) => (
               <Link
                 key={l.href}

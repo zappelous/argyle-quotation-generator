@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const quotation = await prisma.quotation.findUnique({
       where: { id },
       include: {
-        company: true,
+        template: true,
         customer: true,
         items: { include: { sku: true }, orderBy: { lineNo: 'asc' } },
       },
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     orderBy: { createdAt: 'desc' },
     include: {
       customer: true,
-      company: true,
+      template: true,
       _count: { select: { items: true } },
     },
   })
@@ -34,14 +34,15 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const body = await req.json()
   const {
-    companyId,
+    templateId,
     customerId,
     items,
-    gstRate,
+    taxRate,
     deliveryTerms,
     paymentTerms,
     warranty,
     dispatchDate,
+    notes,
   } = body
 
   const quotationNo = `INV-${Date.now()}`
@@ -61,26 +62,27 @@ export async function POST(req: Request) {
     }
   })
 
-  const gstAmount = subtotal * (Number(gstRate || 0) / 100)
-  const total = subtotal + gstAmount
+  const taxAmount = subtotal * (Number(taxRate || 0) / 100)
+  const total = subtotal + taxAmount
 
   const quotation = await prisma.quotation.create({
     data: {
       quotationNo,
-      companyId,
+      templateId,
       customerId,
       subtotal,
-      gstRate: Number(gstRate || 0),
-      gstAmount,
+      taxRate: Number(taxRate || 0),
+      taxAmount,
       total,
       deliveryTerms,
       paymentTerms,
       warranty,
       dispatchDate,
+      notes,
       items: { create: lineItems },
     },
     include: {
-      company: true,
+      template: true,
       customer: true,
       items: { include: { sku: true } },
     },
@@ -96,13 +98,15 @@ export async function PUT(req: Request) {
 
   const body = await req.json()
   const {
+    templateId,
     customerId,
     items,
-    gstRate,
+    taxRate,
     deliveryTerms,
     paymentTerms,
     warranty,
     dispatchDate,
+    notes,
   } = body
 
   let subtotal = 0
@@ -120,27 +124,29 @@ export async function PUT(req: Request) {
     }
   })
 
-  const gstAmount = subtotal * (Number(gstRate || 0) / 100)
-  const total = subtotal + gstAmount
+  const taxAmount = subtotal * (Number(taxRate || 0) / 100)
+  const total = subtotal + taxAmount
 
   await prisma.quotationItem.deleteMany({ where: { quotationId: id } })
 
   const quotation = await prisma.quotation.update({
     where: { id },
     data: {
+      templateId,
       customerId,
       subtotal,
-      gstRate: Number(gstRate || 0),
-      gstAmount,
+      taxRate: Number(taxRate || 0),
+      taxAmount,
       total,
       deliveryTerms,
       paymentTerms,
       warranty,
       dispatchDate,
+      notes,
       items: { create: lineItems },
     },
     include: {
-      company: true,
+      template: true,
       customer: true,
       items: { include: { sku: true } },
     },
