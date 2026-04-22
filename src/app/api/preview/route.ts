@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         customer: sampleCustomer,
         quotation: sampleQuotation,
         items: sampleItems,
-      })
+      }) as any
     )
 
     return new NextResponse(new Uint8Array(buffer), {

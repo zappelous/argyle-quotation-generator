@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       customer: quotation.customer,
       quotation: serializedQuotation,
       items: serializedQuotation.items,
-    })
+    }) as any
   )
 
   try {
