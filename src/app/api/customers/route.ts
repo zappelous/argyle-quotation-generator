@@ -26,6 +26,12 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   const { id } = await req.json()
+  // Delete related quotations first (until cascade is migrated)
+  const quotations = await prisma.quotation.findMany({ where: { customerId: id } })
+  for (const q of quotations) {
+    await prisma.quotationItem.deleteMany({ where: { quotationId: q.id } })
+    await prisma.quotation.delete({ where: { id: q.id } })
+  }
   await prisma.customer.delete({ where: { id } })
   return NextResponse.json({ success: true })
 }
