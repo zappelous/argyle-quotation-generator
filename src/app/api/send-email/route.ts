@@ -47,12 +47,12 @@ export async function POST(req: Request) {
   }
 
   const buffer = await renderToBuffer(
-    QuotationPDF({
-      template: quotation.template,
-      customer: quotation.customer,
-      quotation: serializedQuotation,
-      items: serializedQuotation.items,
-    })
+    <QuotationPDF
+      template={quotation.template}
+      customer={quotation.customer}
+      quotation={serializedQuotation}
+      items={serializedQuotation.items}
+    />
   )
 
   try {
