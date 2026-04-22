@@ -228,12 +228,10 @@ export function QuotationPDF({
       paddingHorizontal: 6,
     },
     colNo: { width: '6%' },
-    colModel: { width: '12%' },
-    colDesc: { width: '32%' },
-    colPerf: { width: '14%' },
-    colQty: { width: '8%', textAlign: 'center' },
-    colPrice: { width: '14%', textAlign: 'right' },
-    colAmount: { width: '14%', textAlign: 'right', borderRightWidth: 0 },
+    colDesc: { width: '48%' },
+    colQty: { width: '10%', textAlign: 'center' },
+    colPrice: { width: '18%', textAlign: 'right' },
+    colAmount: { width: '18%', textAlign: 'right', borderRightWidth: 0 },
     totals: {
       marginTop: 10,
       alignItems: 'flex-end',
@@ -444,9 +442,7 @@ export function QuotationPDF({
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
             <Text style={[styles.tableCell, styles.colNo]}>No.</Text>
-            <Text style={[styles.tableCell, styles.colModel]}>Model</Text>
             <Text style={[styles.tableCell, styles.colDesc]}>Description</Text>
-            <Text style={[styles.tableCell, styles.colPerf]}>Performance</Text>
             <Text style={[styles.tableCell, styles.colQty]}>Qty</Text>
             <Text style={[styles.tableCell, styles.colPrice]}>Price</Text>
             <Text style={[styles.tableCell, styles.colAmount]}>Amount</Text>
@@ -455,15 +451,11 @@ export function QuotationPDF({
           {items.map((item, idx) => (
             <View style={styles.tableRow} key={item.id}>
               <Text style={[styles.tableCell, styles.colNo]}>{idx + 1}</Text>
-              <Text style={[styles.tableCell, styles.colModel]}>
-                {item.sku?.model || item.sku?.code || ''}
-              </Text>
               <Text style={[styles.tableCell, styles.colDesc]}>
                 {item.displayName}
-                {item.description ? `\n${item.description}` : ''}
-              </Text>
-              <Text style={[styles.tableCell, styles.colPerf]}>
-                {item.sku?.performance || ''}
+                {item.sku?.model ? `\nModel: ${item.sku.model}` : ''}
+                {item.sku?.performance ? ` | ${item.sku.performance}` : ''}
+                {item.description && item.description !== item.displayName ? `\n${item.description}` : ''}
               </Text>
               <Text style={[styles.tableCell, styles.colQty]}>
                 {item.quantity}
