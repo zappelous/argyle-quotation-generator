@@ -106,7 +106,7 @@ model Quotation {
   id            String          @id @default(cuid())
   quotationNo   String          @unique
   issueDate     DateTime        @default(now())
-  customer      Customer        @relation(fields: [customerId], references: [id])
+  customer      Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId    String
   template      Template        @relation(fields: [templateId], references: [id])
   templateId    String
@@ -129,7 +129,7 @@ model QuotationItem {
   id            String      @id @default(cuid())
   quotation     Quotation   @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   quotationId   String
-  sku           SKU         @relation(fields: [skuId], references: [id])
+  sku           SKU         @relation(fields: [skuId], references: [id], onDelete: Cascade)
   skuId         String
   quantity      Int
   unitPrice     Decimal     @db.Decimal(10, 2)
