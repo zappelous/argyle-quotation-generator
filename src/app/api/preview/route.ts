@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import React from 'react'
 import { QuotationPDF } from '@/lib/pdf'
 import { renderToBuffer } from '@react-pdf/renderer'
 
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
 
   try {
     const buffer = await renderToBuffer(
-      QuotationPDF({
+      React.createElement(QuotationPDF, {
         template,
         customer: sampleCustomer,
         quotation: sampleQuotation,

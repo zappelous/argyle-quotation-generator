@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import React from 'react'
 import { prisma } from '@/lib/prisma'
 import { QuotationPDF } from '@/lib/pdf'
 import { renderToBuffer } from '@react-pdf/renderer'
@@ -47,12 +48,12 @@ export async function POST(req: Request) {
   }
 
   const buffer = await renderToBuffer(
-    <QuotationPDF
-      template={quotation.template}
-      customer={quotation.customer}
-      quotation={serializedQuotation}
-      items={serializedQuotation.items}
-    />
+    React.createElement(QuotationPDF, {
+      template: quotation.template,
+      customer: quotation.customer,
+      quotation: serializedQuotation,
+      items: serializedQuotation.items,
+    })
   )
 
   try {
