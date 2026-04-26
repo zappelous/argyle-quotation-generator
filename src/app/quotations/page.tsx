@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react'
 import { Nav } from '../Nav'
 import Link from 'next/link'
 
+const statusColors: Record<string, string> = {
+  draft: 'bg-slate-200 text-slate-700',
+  sent: 'bg-blue-100 text-blue-700',
+  accepted: 'bg-purple-100 text-purple-700',
+}
+
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
   const [sendingId, setSendingId] = useState<string | null>(null)
@@ -43,8 +49,28 @@ export default function QuotationsPage() {
       }),
     })
     setSendingId(null)
-    if (res.ok) alert('Email sent')
+    if (res.ok) {
+      alert('Email sent')
+      // Mark as sent if it was draft
+      if (q.status === 'draft') {
+        await fetch(`/api/quotations?id=${q.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...q, status: 'sent' }),
+        })
+        load()
+      }
+    }
     else alert('Failed to send email')
+  }
+
+  const markAccepted = async (q: any) => {
+    await fetch(`/api/quotations?id=${q.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...q, status: 'accepted' }),
+    })
+    load()
   }
 
   const deleteQ = async (id: string) => {
@@ -70,6 +96,7 @@ export default function QuotationsPage() {
                 <th className="px-4 py-2 text-left">Customer</th>
                 <th className="px-4 py-2 text-left">Date</th>
                 <th className="px-4 py-2 text-right">Total</th>
+                <th className="px-4 py-2 text-center">Status</th>
                 <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
@@ -79,15 +106,26 @@ export default function QuotationsPage() {
                   <td className="px-4 py-2">{q.quotationNo}</td>
                   <td className="px-4 py-2">{q.customer?.name}</td>
                   <td className="px-4 py-2">{new Date(q.issueDate).toLocaleDateString('en-GB')}</td>
-                  <td className="px-4 py-2 text-right">SGD {Number(q.total).toFixed(2)}</td>
+                  <td className="px-4 py-2 text-right">{q.template?.currency || 'SGD'} {Number(q.total).toFixed(2)}</td>
                   <td className="px-4 py-2 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Link href={`/quotations/edit?id=${q.id}`} className="text-blue-600 hover:underline">Edit</Link>
-                      <button onClick={() => downloadPdf(q.id)} className="text-slate-700 hover:underline">PDF</button>
-                      <button onClick={() => sendEmail(q)} disabled={sendingId === q.id} className="text-slate-700 hover:underline">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColors[q.status] || 'bg-slate-200'}`}>
+                      {q.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-center">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <Link href={`/quotations/edit?id=${q.id}`} className="text-blue-600 hover:underline text-xs">Edit</Link>
+                      <button onClick={() => downloadPdf(q.id)} className="text-slate-700 hover:underline text-xs">PDF</button>
+                      <button onClick={() => sendEmail(q)} disabled={sendingId === q.id} className="text-slate-700 hover:underline text-xs">
                         {sendingId === q.id ? 'Sending...' : 'Email'}
                       </button>
-                      <button onClick={() => deleteQ(q.id)} className="text-red-600 hover:underline">Delete</button>
+                      {q.status === 'sent' && (
+                        <button onClick={() => markAccepted(q)} className="text-purple-600 hover:underline text-xs">Accept</button>
+                      )}
+                      {(q.status === 'accepted' || q.status === 'sent') && (
+                        <Link href={`/invoices/new?quotationId=${q.id}`} className="text-green-600 hover:underline text-xs font-medium">→ Invoice</Link>
+                      )}
+                      <button onClick={() => deleteQ(q.id)} className="text-red-600 hover:underline text-xs">Delete</button>
                     </div>
                   </td>
                 </tr>

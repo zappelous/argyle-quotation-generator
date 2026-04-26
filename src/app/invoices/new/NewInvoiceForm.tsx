@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Nav } from '../Nav'
+import { Nav } from '../../Nav'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function QuotationFormPage() {
+export default function NewInvoiceForm() {
   const router = useRouter()
   const search = useSearchParams()
-  const editId = search.get('id')
+  const fromQuotationId = search.get('quotationId')
+  const mode = search.get('mode')
 
   const [templates, setTemplates] = useState<any[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState('')
@@ -15,6 +16,7 @@ export default function QuotationFormPage() {
   const [skus, setSkus] = useState<any[]>([])
   const [templateSkus, setTemplateSkus] = useState<any[]>([])
   const [customerId, setCustomerId] = useState('')
+  const [quotationId, setQuotationId] = useState('')
   const [rows, setRows] = useState<any[]>([])
   const [taxRate, setTaxRate] = useState(0)
   const [taxName, setTaxName] = useState('GST')
@@ -22,10 +24,11 @@ export default function QuotationFormPage() {
   const [deliveryTerms, setDeliveryTerms] = useState('')
   const [paymentTerms, setPaymentTerms] = useState('')
   const [warranty, setWarranty] = useState('')
-  const [dispatchDate, setDispatchDate] = useState('')
+  const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')
-  const [status, setStatus] = useState('draft')
   const [loading, setLoading] = useState(false)
+  const [quotations, setQuotations] = useState<any[]>([])
+  const [selectedQuotation, setSelectedQuotation] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -36,31 +39,33 @@ export default function QuotationFormPage() {
       setTemplates(tmplts)
       setCustomers(custs)
       setSkus(skuList)
-      // Auto-select default template
       const def = tmplts.find((t: any) => t.isDefault)
       if (def) {
         setSelectedTemplate(def.id)
         loadTemplateDefaults(def)
       }
     })
-  }, [])
 
-  const loadTemplateDefaults = (template: any) => {
-    setTaxRate(Number(template.taxRate || 0))
-    setTaxName(template.taxName || 'GST')
-    setCurrency(template.currency || 'SGD')
-    setDeliveryTerms(template.defaultDeliveryTerms || '')
-    setPaymentTerms(template.defaultPaymentTerms || '')
-    setWarranty(template.defaultWarranty || '')
-    // Load template-specific SKUs
-    setTemplateSkus(template.skus || [])
-  }
+    if (mode === 'quotation' || !fromQuotationId) {
+      fetch('/api/quotations').then(r => r.json()).then((qs) => {
+        const available = qs.filter((q: any) =>
+          (q.status === 'sent' || q.status === 'accepted')
+        )
+        setQuotations(available)
+      })
+    }
+  }, [mode, fromQuotationId])
 
   useEffect(() => {
-    if (!editId) return
-    fetch(`/api/quotations?id=${editId}`)
+    if (!fromQuotationId) return
+    loadQuotationData(fromQuotationId)
+  }, [fromQuotationId, templates])
+
+  const loadQuotationData = (qid: string) => {
+    fetch(`/api/quotations?id=${qid}`)
       .then(r => r.json())
       .then((q) => {
+        setQuotationId(q.id)
         setSelectedTemplate(q.templateId)
         setCustomerId(q.customerId)
         setTaxRate(Number(q.taxRate))
@@ -69,30 +74,33 @@ export default function QuotationFormPage() {
         setDeliveryTerms(q.deliveryTerms || '')
         setPaymentTerms(q.paymentTerms || '')
         setWarranty(q.warranty || '')
-        setDispatchDate(q.dispatchDate || '')
-        setNotes(q.notes || '')
-        setStatus(q.status || 'draft')
         setRows(q.items.map((it: any) => ({
-          id: it.id,
           skuId: it.skuId,
           quantity: it.quantity,
           unitPrice: Number(it.unitPrice),
           displayName: it.displayName,
           description: it.description || '',
         })))
-        loadTemplateDefaults(q.template)
       })
-  }, [editId])
+  }
 
-  const handleTemplateChange = (templateId: string) => {
-    setSelectedTemplate(templateId)
-    const template = templates.find(t => t.id === templateId)
-    if (template) {
-      loadTemplateDefaults(template)
-      // Auto-select default customer if set and not already selected
-      if (template.defaultCustomer && !customerId) {
-        setCustomerId(template.defaultCustomer.id)
-      }
+  const loadTemplateDefaults = (template: any) => {
+    setTaxRate(Number(template.taxRate || 0))
+    setTaxName(template.taxName || 'GST')
+    setCurrency(template.currency || 'SGD')
+    setDeliveryTerms(template.defaultDeliveryTerms || '')
+    setPaymentTerms(template.defaultPaymentTerms || '')
+    setWarranty(template.defaultWarranty || '')
+    setTemplateSkus(template.skus || [])
+  }
+
+  const handleQuotationSelect = (qid: string) => {
+    setSelectedQuotation(qid)
+    if (qid) {
+      loadQuotationData(qid)
+    } else {
+      setQuotationId('')
+      setRows([])
     }
   }
 
@@ -144,6 +152,7 @@ export default function QuotationFormPage() {
     const payload = {
       templateId: selectedTemplate,
       customerId,
+      quotationId: quotationId || undefined,
       items: rows.map(r => ({
         skuId: r.skuId,
         quantity: Number(r.quantity),
@@ -156,23 +165,20 @@ export default function QuotationFormPage() {
       deliveryTerms,
       paymentTerms,
       warranty,
-      dispatchDate,
+      dueDate,
       notes,
-      status: editId ? status : 'draft',
     }
 
-    const url = editId ? `/api/quotations?id=${editId}` : '/api/quotations'
-    const method = editId ? 'PUT' : 'POST'
-    const res = await fetch(url, {
-      method,
+    const res = await fetch('/api/invoices', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
     setLoading(false)
     if (res.ok) {
-      router.push('/quotations')
+      router.push('/invoices')
     } else {
-      alert('Error saving quotation')
+      alert('Error saving invoice')
     }
   }
 
@@ -180,11 +186,23 @@ export default function QuotationFormPage() {
     <>
       <Nav />
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">{editId ? 'Edit Quotation' : 'New Quotation'}</h1>
+        <h1 className="text-2xl font-bold mb-6">{fromQuotationId ? 'Create Invoice from Quotation' : 'New Invoice'}</h1>
 
-        {templates.length === 0 && (
-          <div className="bg-yellow-100 text-yellow-800 p-4 rounded mb-4">
-            Please <a href="/templates" className="underline">create a template</a> first.
+        {(mode === 'quotation' || !fromQuotationId) && quotations.length > 0 && (
+          <div className="bg-white p-4 rounded-xl shadow mb-6">
+            <label className="block text-sm font-medium mb-1">Convert from Quotation (optional)</label>
+            <select
+              value={selectedQuotation}
+              onChange={e => handleQuotationSelect(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+            >
+              <option value="">— Start fresh (no quotation) —</option>
+              {quotations.map((q: any) => (
+                <option key={q.id} value={q.id}>
+                  {q.quotationNo} — {q.customer?.name} — {q.template?.currency || 'SGD'} {Number(q.total).toFixed(2)} — {new Date(q.issueDate).toLocaleDateString('en-GB')}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
@@ -192,33 +210,25 @@ export default function QuotationFormPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Template</label>
-              <select
-                required
-                value={selectedTemplate}
-                onChange={e => handleTemplateChange(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-              >
+              <select required value={selectedTemplate} onChange={e => { setSelectedTemplate(e.target.value); const t = templates.find(tm => tm.id === e.target.value); if (t) loadTemplateDefaults(t) }} className="w-full border rounded px-3 py-2">
                 <option value="">Select template...</option>
-                {templates.map(t => (
-                  <option key={t.id} value={t.id}>{t.name} {t.isDefault ? '(Default)' : ''}</option>
-                ))}
+                {templates.map(t => <option key={t.id} value={t.id}>{t.name} {t.isDefault ? '(Default)' : ''}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Customer</label>
-              <select
-                required
-                value={customerId}
-                onChange={e => setCustomerId(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-              >
+              <select required value={customerId} onChange={e => setCustomerId(e.target.value)} className="w-full border rounded px-3 py-2">
                 <option value="">Select customer...</option>
-                {customers.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
-                ))}
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
               </select>
             </div>
           </div>
+
+          {quotationId && (
+            <div className="bg-blue-50 text-blue-700 p-3 rounded text-sm">
+              Items pre-filled from quotation. You can still add, remove, or edit line items.
+            </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -230,37 +240,18 @@ export default function QuotationFormPage() {
                 <div key={idx} className="grid grid-cols-12 gap-2 items-end border p-3 rounded">
                   <div className="col-span-4">
                     <label className="text-xs text-slate-500">SKU</label>
-                    <select
-                      required
-                      value={row.skuId}
-                      onChange={e => updateRow(idx, { skuId: e.target.value })}
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    >
+                    <select required value={row.skuId} onChange={e => updateRow(idx, { skuId: e.target.value })} className="w-full border rounded px-2 py-1 text-sm">
                       <option value="">Select...</option>
-                      {skus.map(s => (
-                        <option key={s.id} value={s.id}>{s.code} — {getSkuName(s.id)}</option>
-                      ))}
+                      {skus.map(s => <option key={s.id} value={s.id}>{s.code} — {getSkuName(s.id)}</option>)}
                     </select>
                   </div>
                   <div className="col-span-2">
                     <label className="text-xs text-slate-500">Qty</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={row.quantity}
-                      onChange={e => updateRow(idx, { quantity: e.target.value })}
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
+                    <input type="number" min={1} value={row.quantity} onChange={e => updateRow(idx, { quantity: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
                   </div>
                   <div className="col-span-2">
                     <label className="text-xs text-slate-500">Unit Price</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={row.unitPrice}
-                      onChange={e => updateRow(idx, { unitPrice: e.target.value })}
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
+                    <input type="number" step="0.01" value={row.unitPrice} onChange={e => updateRow(idx, { unitPrice: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
                   </div>
                   <div className="col-span-3">
                     <label className="text-xs text-slate-500">Amount</label>
@@ -284,8 +275,8 @@ export default function QuotationFormPage() {
               <input type="number" value={taxRate} onChange={e => setTaxRate(Number(e.target.value))} className="w-full border rounded px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Dispatch Date</label>
-              <input value={dispatchDate} onChange={e => setDispatchDate(e.target.value)} className="w-full border rounded px-3 py-2" />
+              <label className="block text-sm font-medium mb-1">Due Date</label>
+              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full border rounded px-3 py-2" />
             </div>
           </div>
 
@@ -304,17 +295,6 @@ export default function QuotationFormPage() {
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full border rounded px-3 py-2" placeholder="Internal notes (not shown on PDF)" />
           </div>
 
-          {editId && (
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select value={status} onChange={e => setStatus(e.target.value)} className="w-full border rounded px-3 py-2">
-                <option value="draft">Draft</option>
-                <option value="sent">Sent</option>
-                <option value="accepted">Accepted</option>
-              </select>
-            </div>
-          )}
-
           <div className="flex items-center justify-between border-t pt-4">
             <div className="text-lg">
               <div className="text-slate-600">Subtotal: <span className="font-medium">{currency} {subtotal.toFixed(2)}</span></div>
@@ -322,7 +302,7 @@ export default function QuotationFormPage() {
               <div className="text-xl font-bold mt-1">Total: {currency} {total.toFixed(2)}</div>
             </div>
             <button disabled={loading} className="bg-slate-900 text-white px-6 py-3 rounded hover:bg-slate-800 disabled:opacity-50">
-              {loading ? 'Saving...' : (editId ? 'Update Quotation' : 'Save Quotation')}
+              {loading ? 'Saving...' : 'Save Invoice'}
             </button>
           </div>
         </form>

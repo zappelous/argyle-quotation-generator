@@ -14,6 +14,7 @@ export async function POST(req: Request) {
 
   // Create sample data for preview
   const sampleCustomer = {
+    id: 'preview-cust',
     name: 'Sample Customer Ltd',
     email: 'contact@sample.com',
     phone: '+65 9123 4567',
