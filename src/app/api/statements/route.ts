@@ -52,18 +52,23 @@ export async function GET(req: Request) {
     orderBy: { paymentDate: 'asc' },
   })
 
-  // Build transactions list
+  // Build transactions list (quotations first, then invoices, then payments)
   let balance = 0
   const transactions: any[] = []
 
-  // Quotations (informational - no financial impact unless converted)
+  // Quotations - show as debit if accepted
   for (const q of quotations) {
+    const isAccepted = q.status === 'accepted'
+    const amount = isAccepted ? Number(q.total) : 0
+    if (isAccepted) balance += amount
     transactions.push({
       date: q.issueDate.toISOString(),
       type: 'quotation',
       docNo: q.quotationNo,
-      description: `Quotation — ${q.items.length} item(s)`,
-      debit: 0,
+      description: isAccepted
+        ? `Quotation (Accepted) — ${q.items.length} item(s)`
+        : `Quotation — ${q.status}`,
+      debit: amount,
       credit: 0,
       balance,
     })

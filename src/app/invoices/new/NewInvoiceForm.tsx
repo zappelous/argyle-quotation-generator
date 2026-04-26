@@ -29,6 +29,9 @@ export default function NewInvoiceForm() {
   const [loading, setLoading] = useState(false)
   const [quotations, setQuotations] = useState<any[]>([])
   const [selectedQuotation, setSelectedQuotation] = useState('')
+  const [originalRows, setOriginalRows] = useState<any[]>([])
+  const [percentage, setPercentage] = useState(100)
+  const [invoicedPct, setInvoicedPct] = useState(0)
 
   useEffect(() => {
     Promise.all([
@@ -62,27 +65,53 @@ export default function NewInvoiceForm() {
   }, [fromQuotationId, templates])
 
   const loadQuotationData = (qid: string) => {
-    fetch(`/api/quotations?id=${qid}`)
-      .then(r => r.json())
-      .then((q) => {
-        setQuotationId(q.id)
-        setSelectedTemplate(q.templateId)
-        setCustomerId(q.customerId)
-        setTaxRate(Number(q.taxRate))
-        setTaxName(q.template?.taxName || 'GST')
-        setCurrency(q.template?.currency || 'SGD')
-        setDeliveryTerms(q.deliveryTerms || '')
-        setPaymentTerms(q.paymentTerms || '')
-        setWarranty(q.warranty || '')
-        setRows(q.items.map((it: any) => ({
-          skuId: it.skuId,
-          quantity: it.quantity,
-          unitPrice: Number(it.unitPrice),
-          displayName: it.displayName,
-          description: it.description || '',
-        })))
-      })
+    Promise.all([
+      fetch(`/api/quotations?id=${qid}`).then(r => r.json()),
+      fetch(`/api/invoices?quotationId=${qid}`).then(r => r.json()),
+    ]).then(([q, invs]) => {
+      setQuotationId(q.id)
+      setSelectedTemplate(q.templateId)
+      setCustomerId(q.customerId)
+      setTaxRate(Number(q.taxRate))
+      setTaxName(q.template?.taxName || 'GST')
+      setCurrency(q.template?.currency || 'SGD')
+      setDeliveryTerms(q.deliveryTerms || '')
+      setPaymentTerms(q.paymentTerms || '')
+      setWarranty(q.warranty || '')
+
+      const orig = q.items.map((it: any) => ({
+        skuId: it.skuId,
+        quantity: it.quantity,
+        unitPrice: Number(it.unitPrice),
+        displayName: it.displayName,
+        description: it.description || '',
+      }))
+      setOriginalRows(orig)
+
+      // Calculate already-invoiced percentage
+      const totalInvoiced = invs.reduce((sum: number, inv: any) => sum + Number(inv.total), 0)
+      const pct = q.total > 0 ? Math.round((totalInvoiced / Number(q.total)) * 100) : 0
+      setInvoicedPct(pct)
+
+      // Default to remaining percentage
+      const remaining = Math.max(0, 100 - pct)
+      setPercentage(remaining)
+      applyPercentage(orig, remaining)
+    })
   }
+
+  const applyPercentage = (orig: any[], pct: number) => {
+    const factor = pct / 100
+    setRows(orig.map(r => ({
+      ...r,
+      unitPrice: Number((r.unitPrice * factor).toFixed(2)),
+    })))
+  }
+
+  useEffect(() => {
+    if (originalRows.length === 0) return
+    applyPercentage(originalRows, percentage)
+  }, [percentage])
 
   const loadTemplateDefaults = (template: any) => {
     setTaxRate(Number(template.taxRate || 0))
@@ -225,8 +254,34 @@ export default function NewInvoiceForm() {
           </div>
 
           {quotationId && (
-            <div className="bg-blue-50 text-blue-700 p-3 rounded text-sm">
-              Items pre-filled from quotation. You can still add, remove, or edit line items.
+            <div className="bg-blue-50 p-4 rounded space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-blue-700 text-sm font-medium">Quotation Invoicing Progress</span>
+                <span className="text-blue-700 text-sm font-bold">{invoicedPct}% already invoiced</span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${invoicedPct}%` }}></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-blue-700">Invoice Percentage (%)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100 - invoicedPct}
+                    value={percentage}
+                    onChange={e => setPercentage(Number(e.target.value))}
+                    className="w-full border rounded px-3 py-2"
+                  />
+                  <p className="text-xs text-blue-600 mt-1">Max: {100 - invoicedPct}% remaining</p>
+                </div>
+                <div className="flex items-end">
+                  <div className="text-sm text-blue-700">
+                    <div>This invoice: <span className="font-bold">{percentage}%</span></div>
+                    <div>After this: <span className="font-bold">{invoicedPct + percentage}%</span> total invoiced</div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
