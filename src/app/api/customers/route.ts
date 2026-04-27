@@ -1,8 +1,22 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { isAdmin } from '@/lib/admin'
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const archived = searchParams.get('archived') === 'true'
+
+  const where: any = {}
+  if (!archived) {
+    where.deletedAt = null
+  } else {
+    const admin = await isAdmin()
+    if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    where.deletedAt = { not: null }
+  }
+
   const customers = await prisma.customer.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
     include: { _count: { select: { quotations: true } } },
   })
@@ -26,12 +40,28 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   const { id } = await req.json()
-  // Delete related quotations first (until cascade is migrated)
-  const quotations = await prisma.quotation.findMany({ where: { customerId: id } })
-  for (const q of quotations) {
-    await prisma.quotationItem.deleteMany({ where: { quotationId: q.id } })
-    await prisma.quotation.delete({ where: { id: q.id } })
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  // Soft delete
+  await prisma.customer.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  })
+  return NextResponse.json({ success: true, archived: true })
+}
+
+export async function PATCH(req: Request) {
+  const { id, action } = await req.json()
+  if (!id || action !== 'restore') {
+    return NextResponse.json({ error: 'Missing id or action' }, { status: 400 })
   }
-  await prisma.customer.delete({ where: { id } })
-  return NextResponse.json({ success: true })
+
+  const admin = await isAdmin()
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const restored = await prisma.customer.update({
+    where: { id },
+    data: { deletedAt: null },
+  })
+  return NextResponse.json({ success: true, restored })
 }

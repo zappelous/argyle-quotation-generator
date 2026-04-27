@@ -84,8 +84,8 @@ export default function QuotationsPage() {
     load()
   }
 
-  const deleteQ = async (id: string) => {
-    if (!confirm('Delete this quotation?')) return
+  const archiveQ = async (id: string) => {
+    if (!confirm('Archive this quotation? It will be hidden from normal views but can be restored by an admin.')) return
     await fetch(`/api/quotations?id=${id}`, { method: 'DELETE' })
     load()
   }
@@ -96,7 +96,10 @@ export default function QuotationsPage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Quotations</h1>
-          <Link href="/quotations/new" className="bg-slate-900 text-white px-4 py-2 rounded hover:bg-slate-800">New Quotation</Link>
+          <div className="flex gap-2">
+            <Link href="/archive?type=quotations" className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2">View Archive</Link>
+            <Link href="/quotations/new" className="bg-slate-900 text-white px-4 py-2 rounded hover:bg-slate-800">New Quotation</Link>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow overflow-x-auto">
@@ -150,7 +153,7 @@ export default function QuotationsPage() {
                         {pct > 0 && pct < 100 && (
                           <Link href={`/invoices/new?quotationId=${q.id}`} className="text-amber-600 hover:underline text-xs">+ Milestone</Link>
                         )}
-                        <button onClick={() => deleteQ(q.id)} className="text-red-600 hover:underline text-xs">Delete</button>
+                        <button onClick={() => archiveQ(q.id)} className="text-red-600 hover:underline text-xs">Archive</button>
                       </div>
                     </td>
                   </tr>

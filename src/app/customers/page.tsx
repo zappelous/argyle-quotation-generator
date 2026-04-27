@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Nav } from '../Nav'
+import Link from 'next/link'
 import { Pencil, Trash2, X, Check } from 'lucide-react'
 
 interface Customer {
@@ -74,8 +75,8 @@ export default function CustomersPage() {
     }
   }
 
-  const deleteCustomer = async (id: string) => {
-    if (!confirm('Delete this customer? Their quotations will also be removed. This cannot be undone.')) return
+  const archiveCustomer = async (id: string) => {
+    if (!confirm('Archive this customer? They will be hidden from normal views but can be restored by an admin.')) return
     setLoading(true)
     await fetch('/api/customers', {
       method: 'DELETE',
@@ -90,7 +91,10 @@ export default function CustomersPage() {
     <>
       <Nav />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Customers</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Customers</h1>
+          <Link href="/archive?type=customers" className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2">View Archive</Link>
+        </div>
         <form onSubmit={submit} className="bg-white p-6 rounded-xl shadow mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
           <input required placeholder="Customer Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="border rounded px-3 py-2" />
           <input required type="email" placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="border rounded px-3 py-2" />
@@ -139,7 +143,7 @@ export default function CustomersPage() {
                       <td className="px-4 py-2 text-center">
                         <div className="flex gap-1 justify-center">
                           <button onClick={() => startEdit(c)} className="p-1 rounded hover:bg-blue-100 text-blue-600" title="Edit"><Pencil size={16} /></button>
-                          <button onClick={() => deleteCustomer(c.id)} className="p-1 rounded hover:bg-red-100 text-red-600" title="Delete"><Trash2 size={16} /></button>
+                          <button onClick={() => archiveCustomer(c.id)} className="p-1 rounded hover:bg-red-100 text-red-600" title="Archive"><Trash2 size={16} /></button>
                         </div>
                       </td>
                     </>

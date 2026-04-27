@@ -15,6 +15,7 @@ const links = [
   { href: '/skus', label: 'SKUs' },
   { href: '/customers', label: 'Customers' },
   { href: '/admin/allowed-emails', label: 'Admin' },
+  { href: '/archive', label: 'Archive', adminOnly: true },
 ]
 
 export function Nav() {
@@ -29,7 +30,7 @@ export function Nav() {
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-6 overflow-x-auto">
             <span className="font-bold text-lg whitespace-nowrap">QuoteFlow</span>
-            {!isAuthPage && links.map((l) => (
+            {!isAuthPage && links.filter((l: any) => !l.adminOnly || (session?.user as any)?.role === 'admin').map((l: any) => (
               <Link
                 key={l.href}
                 href={l.href}

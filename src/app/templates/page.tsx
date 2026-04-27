@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Nav } from '../Nav'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export default function TemplatesPage() {
@@ -116,8 +117,8 @@ export default function TemplatesPage() {
     }
   }
 
-  const deleteTemplate = async (id: string) => {
-    if (!confirm('Delete this template?')) return
+  const archiveTemplate = async (id: string) => {
+    if (!confirm('Archive this template? It will be hidden from normal views but can be restored by an admin.')) return
     const res = await fetch(`/api/templates?id=${id}`, { method: 'DELETE' })
     if (res.ok) loadTemplates()
   }
@@ -151,12 +152,15 @@ export default function TemplatesPage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Templates</h1>
-          <button
-            onClick={() => { setShowForm(true); setEditing(null); setLogoPreview(null) }}
-            className="bg-slate-900 text-white px-4 py-2 rounded hover:bg-slate-800"
-          >
-            + New Template
-          </button>
+          <div className="flex gap-2">
+            <Link href="/archive?type=templates" className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2">View Archive</Link>
+            <button
+              onClick={() => { setShowForm(true); setEditing(null); setLogoPreview(null) }}
+              className="bg-slate-900 text-white px-4 py-2 rounded hover:bg-slate-800"
+            >
+              + New Template
+            </button>
+          </div>
         </div>
 
         {showForm && (
@@ -314,7 +318,7 @@ export default function TemplatesPage() {
                 <button onClick={() => previewTemplate(t)} className="text-sm text-blue-700 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100">Preview PDF</button>
                 <button onClick={() => editTemplate(t)} className="text-sm text-slate-700 bg-slate-100 px-3 py-1 rounded hover:bg-slate-200">Edit</button>
                 <button onClick={() => duplicateTemplate(t)} className="text-sm text-slate-700 bg-slate-100 px-3 py-1 rounded hover:bg-slate-200">Duplicate</button>
-                <button onClick={() => deleteTemplate(t.id)} className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded hover:bg-red-100">Delete</button>
+                <button onClick={() => archiveTemplate(t.id)} className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded hover:bg-red-100">Archive</button>
               </div>
             </div>
           ))}

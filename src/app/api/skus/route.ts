@@ -1,8 +1,21 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { isAdmin } from '@/lib/admin'
 
-export async function GET() {
-  const skus = await prisma.sKU.findMany({ orderBy: { createdAt: 'desc' } })
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const archived = searchParams.get('archived') === 'true'
+
+  const where: any = {}
+  if (!archived) {
+    where.deletedAt = null
+  } else {
+    const admin = await isAdmin()
+    if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    where.deletedAt = { not: null }
+  }
+
+  const skus = await prisma.sKU.findMany({ where, orderBy: { createdAt: 'desc' } })
   return NextResponse.json(skus)
 }
 
@@ -23,9 +36,28 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   const { id } = await req.json()
-  // Delete related quotation items first (until cascade is migrated)
-  await prisma.quotationItem.deleteMany({ where: { skuId: id } })
-  await prisma.templateSKU.deleteMany({ where: { skuId: id } })
-  await prisma.sKU.delete({ where: { id } })
-  return NextResponse.json({ success: true })
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  // Soft delete
+  await prisma.sKU.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  })
+  return NextResponse.json({ success: true, archived: true })
+}
+
+export async function PATCH(req: Request) {
+  const { id, action } = await req.json()
+  if (!id || action !== 'restore') {
+    return NextResponse.json({ error: 'Missing id or action' }, { status: 400 })
+  }
+
+  const admin = await isAdmin()
+  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const restored = await prisma.sKU.update({
+    where: { id },
+    data: { deletedAt: null },
+  })
+  return NextResponse.json({ success: true, restored })
 }

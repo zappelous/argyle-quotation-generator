@@ -66,8 +66,8 @@ export default function InvoicesPage() {
     } else alert('Failed to send email')
   }
 
-  const deleteInv = async (id: string) => {
-    if (!confirm('Delete this invoice?')) return
+  const archiveInv = async (id: string) => {
+    if (!confirm('Archive this invoice? It will be hidden from normal views but can be restored by an admin.')) return
     await fetch(`/api/invoices?id=${id}`, { method: 'DELETE' })
     load()
   }
@@ -79,6 +79,7 @@ export default function InvoicesPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Invoices</h1>
           <div className="flex gap-2">
+            <Link href="/archive?type=invoices" className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2">View Archive</Link>
             <Link href="/invoices/new?mode=quotation" className="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-600 text-sm">
               From Quotation
             </Link>
@@ -123,7 +124,7 @@ export default function InvoicesPage() {
                       <button onClick={() => sendEmail(inv)} disabled={sendingId === inv.id} className="text-slate-700 hover:underline text-xs">
                         {sendingId === inv.id ? 'Sending...' : 'Email'}
                       </button>
-                      <button onClick={() => deleteInv(inv.id)} className="text-red-600 hover:underline text-xs">Delete</button>
+                      <button onClick={() => archiveInv(inv.id)} className="text-red-600 hover:underline text-xs">Archive</button>
                     </div>
                   </td>
                 </tr>

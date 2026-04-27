@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Nav } from '../Nav'
+import Link from 'next/link'
 import { Pencil, Trash2, X, Check } from 'lucide-react'
 
 interface SKU {
@@ -75,8 +76,8 @@ export default function SKUsPage() {
     }
   }
 
-  const deleteSKU = async (id: string) => {
-    if (!confirm('Delete this SKU? This cannot be undone.')) return
+  const archiveSKU = async (id: string) => {
+    if (!confirm('Archive this SKU? It will be hidden from normal views but can be restored by an admin.')) return
     setLoading(true)
     await fetch('/api/skus', {
       method: 'DELETE',
@@ -91,7 +92,10 @@ export default function SKUsPage() {
     <>
       <Nav />
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">SKUs</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">SKUs</h1>
+          <Link href="/archive?type=skus" className="text-sm text-slate-500 hover:text-slate-700 px-3 py-2">View Archive</Link>
+        </div>
         <form onSubmit={submit} className="bg-white p-6 rounded-xl shadow mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <input required placeholder="SKU Code" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} className="border rounded px-3 py-2" />
           <input required placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="border rounded px-3 py-2" />
@@ -141,7 +145,7 @@ export default function SKUsPage() {
                       <td className="px-4 py-2 text-center">
                         <div className="flex gap-1 justify-center">
                           <button onClick={() => startEdit(s)} className="p-1 rounded hover:bg-blue-100 text-blue-600" title="Edit"><Pencil size={16} /></button>
-                          <button onClick={() => deleteSKU(s.id)} className="p-1 rounded hover:bg-red-100 text-red-600" title="Delete"><Trash2 size={16} /></button>
+                          <button onClick={() => archiveSKU(s.id)} className="p-1 rounded hover:bg-red-100 text-red-600" title="Archive"><Trash2 size={16} /></button>
                         </div>
                       </td>
                     </>
