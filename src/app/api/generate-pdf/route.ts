@@ -128,6 +128,7 @@ export async function POST(req: Request) {
       total: Number(invoice.total),
       amountPaid: Number(invoice.amountPaid),
       balanceDue: Number(invoice.balanceDue),
+      milestonePct: Number(invoice.milestonePct),
       items: invoice.items.map(item => ({
         ...item,
         unitPrice: Number(item.unitPrice),

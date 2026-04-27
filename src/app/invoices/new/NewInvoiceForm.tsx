@@ -32,6 +32,8 @@ export default function NewInvoiceForm() {
   const [originalRows, setOriginalRows] = useState<any[]>([])
   const [percentage, setPercentage] = useState(100)
   const [invoicedPct, setInvoicedPct] = useState(0)
+  const [milestone, setMilestone] = useState('')
+  const [milestonePct, setMilestonePct] = useState(100)
 
   useEffect(() => {
     Promise.all([
@@ -87,6 +89,7 @@ export default function NewInvoiceForm() {
         description: it.description || '',
       }))
       setOriginalRows(orig)
+      setRows(orig) // Keep items at 100% — milestone handled by API
 
       // Calculate already-invoiced percentage
       const totalInvoiced = invs.reduce((sum: number, inv: any) => sum + Number(inv.total), 0)
@@ -96,22 +99,9 @@ export default function NewInvoiceForm() {
       // Default to remaining percentage
       const remaining = Math.max(0, 100 - pct)
       setPercentage(remaining)
-      applyPercentage(orig, remaining)
+      setMilestonePct(remaining)
     })
   }
-
-  const applyPercentage = (orig: any[], pct: number) => {
-    const factor = pct / 100
-    setRows(orig.map(r => ({
-      ...r,
-      unitPrice: Number((r.unitPrice * factor).toFixed(2)),
-    })))
-  }
-
-  useEffect(() => {
-    if (originalRows.length === 0) return
-    applyPercentage(originalRows, percentage)
-  }, [percentage])
 
   const loadTemplateDefaults = (template: any) => {
     setTaxRate(Number(template.taxRate || 0))
@@ -196,6 +186,8 @@ export default function NewInvoiceForm() {
       warranty,
       dueDate,
       notes,
+      milestone,
+      milestonePct: percentage,
     }
 
     const res = await fetch('/api/invoices', {
@@ -262,9 +254,24 @@ export default function NewInvoiceForm() {
               <div className="w-full bg-blue-200 rounded-full h-2">
                 <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${invoicedPct}%` }}></div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-blue-700">Invoice Percentage (%)</label>
+                  <label className="block text-sm font-medium mb-1 text-blue-700">Milestone Name</label>
+                  <select
+                    value={milestone}
+                    onChange={e => setMilestone(e.target.value)}
+                    className="w-full border rounded px-3 py-2"
+                  >
+                    <option value="">— Select milestone —</option>
+                    <option value="Downpayment">Downpayment</option>
+                    <option value="Installation">Installation</option>
+                    <option value="Final Collection">Final Collection</option>
+                    <option value="Progress Payment">Progress Payment</option>
+                    <option value="Retention">Retention</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-blue-700">Percentage (%)</label>
                   <input
                     type="number"
                     min={1}
@@ -354,7 +361,20 @@ export default function NewInvoiceForm() {
             <div className="text-lg">
               <div className="text-slate-600">Subtotal: <span className="font-medium">{currency} {subtotal.toFixed(2)}</span></div>
               <div className="text-slate-600">{taxName}: <span className="font-medium">{currency} {taxAmount.toFixed(2)}</span></div>
-              <div className="text-xl font-bold mt-1">Total: {currency} {total.toFixed(2)}</div>
+              <div className="text-slate-600">Full Amount: <span className="font-medium">{currency} {(subtotal + taxAmount).toFixed(2)}</span></div>
+              {quotationId && percentage < 100 && milestone && (
+                <div className="text-amber-700 mt-1">
+                  <span className="font-medium">{milestone} ({percentage}%):</span> <span className="font-bold">{currency} {((subtotal + taxAmount) * (percentage / 100)).toFixed(2)}</span>
+                </div>
+              )}
+              {quotationId && percentage < 100 && !milestone && (
+                <div className="text-amber-700 mt-1">
+                  <span className="font-medium">Milestone Payment ({percentage}%):</span> <span className="font-bold">{currency} {((subtotal + taxAmount) * (percentage / 100)).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="text-xl font-bold mt-1">
+                {quotationId && percentage < 100 ? 'Amount Due:' : 'Total:'} {currency} {(quotationId && percentage < 100 ? (subtotal + taxAmount) * (percentage / 100) : total).toFixed(2)}
+              </div>
             </div>
             <button disabled={loading} className="bg-slate-900 text-white px-6 py-3 rounded hover:bg-slate-800 disabled:opacity-50">
               {loading ? 'Saving...' : 'Save Invoice'}

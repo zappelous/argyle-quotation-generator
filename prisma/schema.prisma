@@ -163,6 +163,10 @@ model Invoice {
   amountPaid    Decimal   @default(0.00) @db.Decimal(10, 2)
   balanceDue    Decimal   @db.Decimal(10, 2)
 
+  // Milestone info
+  milestone     String?   // e.g. "Downpayment", "Installation", "Final Collection"
+  milestonePct  Decimal   @default(100.00) @db.Decimal(5, 2)
+
   deliveryTerms String?
   paymentTerms  String?
   warranty      String?

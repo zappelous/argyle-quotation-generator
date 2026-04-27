@@ -47,6 +47,8 @@ export async function POST(req: Request) {
     warranty,
     dueDate,
     notes,
+    milestone,
+    milestonePct,
   } = body
 
   const invoiceNo = `INV-${Date.now()}`
@@ -67,7 +69,11 @@ export async function POST(req: Request) {
   })
 
   const taxAmount = subtotal * (Number(taxRate || 0) / 100)
-  const total = subtotal + taxAmount
+  const fullTotal = subtotal + taxAmount
+  
+  // For milestone invoices, the total is a percentage of the full total
+  const pct = Number(milestonePct || 100)
+  const total = fullTotal * (pct / 100)
 
   const invoice = await prisma.invoice.create({
     data: {
@@ -86,6 +92,8 @@ export async function POST(req: Request) {
       warranty,
       dueDate: dueDate ? new Date(dueDate) : null,
       notes,
+      milestone,
+      milestonePct: pct,
       status: 'draft',
       items: { create: lineItems },
     },
@@ -117,6 +125,8 @@ export async function PUT(req: Request) {
     dueDate,
     notes,
     status,
+    milestone,
+    milestonePct,
   } = body
 
   let subtotal = 0
@@ -135,7 +145,9 @@ export async function PUT(req: Request) {
   })
 
   const taxAmount = subtotal * (Number(taxRate || 0) / 100)
-  const total = subtotal + taxAmount
+  const fullTotal = subtotal + taxAmount
+  const pct = Number(milestonePct || 100)
+  const total = fullTotal * (pct / 100)
 
   // Recalculate balance due based on existing payments
   const existing = await prisma.invoice.findUnique({
@@ -165,6 +177,8 @@ export async function PUT(req: Request) {
       dueDate: dueDate ? new Date(dueDate) : null,
       notes,
       status: newStatus,
+      milestone,
+      milestonePct: pct,
       items: { create: lineItems },
     },
     include: {

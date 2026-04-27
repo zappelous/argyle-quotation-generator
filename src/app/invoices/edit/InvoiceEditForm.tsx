@@ -28,6 +28,8 @@ export default function InvoiceEditForm() {
   const [status, setStatus] = useState('draft')
   const [loading, setLoading] = useState(false)
   const [payments, setPayments] = useState<any[]>([])
+  const [milestone, setMilestone] = useState('')
+  const [milestonePct, setMilestonePct] = useState(100)
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('Bank Transfer')
   const [paymentRef, setPaymentRef] = useState('')
@@ -67,6 +69,8 @@ export default function InvoiceEditForm() {
         setDueDate(inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : '')
         setNotes(inv.notes || '')
         setStatus(inv.status)
+        setMilestone(inv.milestone || '')
+        setMilestonePct(Number(inv.milestonePct || 100))
         setPayments(inv.payments || [])
         setRows(inv.items.map((it: any) => ({
           id: it.id,
@@ -154,6 +158,8 @@ export default function InvoiceEditForm() {
       dueDate,
       notes,
       status: editId ? status : 'draft',
+      milestone,
+      milestonePct,
     }
 
     const url = editId ? `/api/invoices?id=${editId}` : '/api/invoices'
@@ -296,6 +302,17 @@ export default function InvoiceEditForm() {
             <label className="block text-sm font-medium mb-1">Notes</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full border rounded px-3 py-2" placeholder="Internal notes (not shown on PDF)" />
           </div>
+
+          {editId && milestone && milestonePct < 100 && (
+            <div className="bg-amber-50 p-3 rounded border border-amber-200">
+              <div className="text-sm text-amber-800">
+                <span className="font-medium">Milestone Invoice:</span> {milestone} ({milestonePct}%)
+              </div>
+              <div className="text-sm text-amber-700">
+                Full amount: {currency} {((total / (milestonePct / 100))).toFixed(2)} · This invoice: {currency} {total.toFixed(2)}
+              </div>
+            </div>
+          )}
 
           {editId && (
             <div>

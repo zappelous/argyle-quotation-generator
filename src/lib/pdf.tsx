@@ -89,6 +89,8 @@ interface InvoiceData {
   warranty?: string | null
   notes?: string | null
   status: string
+  milestone?: string | null
+  milestonePct: number
 }
 
 interface PaymentRecord {
@@ -689,6 +691,10 @@ export function InvoicePDF({
   }
 
   const isPaid = invoice.status === 'paid'
+  const isMilestone = invoice.milestonePct < 100
+  const milestoneLabel = invoice.milestone || `Payment (${invoice.milestonePct}%)`
+  const milestoneAmount = Number(invoice.total)
+  const fullTotal = items.reduce((sum, it) => sum + Number(it.amount), 0) * (1 + Number(invoice.taxRate) / 100)
 
   return (
     <Document>
@@ -728,9 +734,27 @@ export function InvoicePDF({
             <Text style={styles.totalValue}>{fmtMoney(Number(invoice.taxAmount))}</Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>{fmtMoney(Number(invoice.total))}</Text>
+            <Text style={styles.totalLabel}>Full Amount</Text>
+            <Text style={styles.totalValue}>{fmtMoney(fullTotal)}</Text>
           </View>
+          {isMilestone && (
+            <>
+              <View style={[styles.totalRow, { borderTopWidth: 1, borderTopColor: '#e5e7eb', marginTop: 4, paddingTop: 4 }]}>
+                <Text style={[styles.totalLabel, { color: template.primaryColor, fontWeight: 'bold' }]}>Payment required for {milestoneLabel} ({invoice.milestonePct}%)</Text>
+                <Text style={[styles.totalValue, { color: template.primaryColor, fontWeight: 'bold' }]}>{fmtMoney(milestoneAmount)}</Text>
+              </View>
+              <View style={[styles.totalRow, { borderTopWidth: 2, borderTopColor: template.primaryColor, marginTop: 6, paddingTop: 6 }]}>
+                <Text style={[styles.totalLabel, { fontSize: 12, fontWeight: 'bold' }]}>Amount Due</Text>
+                <Text style={[styles.totalValue, { fontSize: 12, fontWeight: 'bold' }]}>{fmtMoney(milestoneAmount)}</Text>
+              </View>
+            </>
+          )}
+          {!isMilestone && (
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalLabel, { fontSize: 12 }]}>Total</Text>
+              <Text style={[styles.totalValue, { fontSize: 12, fontWeight: 'bold' }]}>{fmtMoney(Number(invoice.total))}</Text>
+            </View>
+          )}
           {invoice.amountPaid > 0 && (
             <>
               <View style={styles.totalRow}>
