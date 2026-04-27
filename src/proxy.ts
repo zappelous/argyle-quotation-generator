@@ -5,19 +5,18 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const isAuthPage = nextUrl.pathname.startsWith('/login') || nextUrl.pathname.startsWith('/register')
 
-  // Fix protocol for Railway proxy (x-forwarded-proto: https)
-  const proto = req.headers.get('x-forwarded-proto')
-  if (proto === 'https' && nextUrl.protocol === 'http:') {
-    nextUrl.protocol = 'https:'
-    nextUrl.port = ''
-  }
+  // Build correct base URL for Railway proxy (handles HTTPS termination)
+  const host = req.headers.get('host') || nextUrl.host
+  const forwardedProto = req.headers.get('x-forwarded-proto')
+  const protocol = forwardedProto === 'https' ? 'https' : nextUrl.protocol.replace(':', '')
+  const baseUrl = `${protocol}://${host}`
 
   if (!isLoggedIn && !isAuthPage) {
-    return Response.redirect(new URL('/login', nextUrl))
+    return Response.redirect(new URL('/login', baseUrl))
   }
 
   if (isLoggedIn && isAuthPage) {
-    return Response.redirect(new URL('/', nextUrl))
+    return Response.redirect(new URL('/', baseUrl))
   }
 })
 
